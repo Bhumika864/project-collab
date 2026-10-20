@@ -1,8 +1,14 @@
 import React from 'react';
 
-const TaskCard = ({ task, onEdit, onDelete, canEdit }) => {
+const TaskCard = ({ task, onEdit, onDelete, canEdit, onDragStart, onDragEnd }) => {
   return (
-    <div id={`task-${task._id}`} className="bg-gray-700 rounded-md p-3 shadow-sm">
+    <div
+      id={`task-${task._id}`}
+      draggable={canEdit}
+      onDragStart={(event) => onDragStart(event, task)}
+      onDragEnd={onDragEnd}
+      className={`bg-gray-700 rounded-md p-3 shadow-sm ${canEdit ? 'cursor-grab active:cursor-grabbing' : ''}`}
+    >
       <div className="flex justify-between items-start">
         <h4 className="font-medium text-white">{task.title}</h4>
         {canEdit && <>

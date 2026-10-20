@@ -164,6 +164,27 @@ const ProjectPage = () => {
   const doneTasks = tasks.filter(t => t.status === 'Done');
   const canEdit = project.role === 'owner' || project.role === 'editor';
 
+  const handleMoveTask = async (taskId, status) => {
+    const task = tasks.find((item) => item._id === taskId);
+    if (!canEdit || !task || task.status === status) return;
+
+    setTasks((currentTasks) => currentTasks.map((item) => (
+      item._id === taskId ? { ...item, status } : item
+    )));
+
+    try {
+      const updatedTask = await taskService.updateTask(taskId, { status });
+      setTasks((currentTasks) => currentTasks.map((item) => (
+        item._id === taskId ? updatedTask : item
+      )));
+    } catch (error) {
+      setTasks((currentTasks) => currentTasks.map((item) => (
+        item._id === taskId ? task : item
+      )));
+      alert(error.response?.data?.message || 'Could not move task.');
+    }
+  };
+
   const handleDeleteTask = async (taskId) => {
     if (window.confirm('Are you sure you want to delete this task?')) {
       try {
@@ -210,10 +231,11 @@ const ProjectPage = () => {
         </div>
       </header>
 
+      <p className="mb-3 text-sm text-gray-400">Drag a task into another column to change its status.</p>
       <div className="flex flex-col md:flex-row gap-6">
-        <TaskColumn title="To Do" tasks={todoTasks} onEditTask={openEditModal} onDeleteTask={handleDeleteTask} canEdit={canEdit} />
-        <TaskColumn title="In Progress" tasks={inProgressTasks} onEditTask={openEditModal} onDeleteTask={handleDeleteTask} canEdit={canEdit} />
-        <TaskColumn title="Done" tasks={doneTasks} onEditTask={openEditModal} onDeleteTask={handleDeleteTask} canEdit={canEdit} />
+        <TaskColumn title="To Do" status="ToDo" tasks={todoTasks} onEditTask={openEditModal} onDeleteTask={handleDeleteTask} onMoveTask={handleMoveTask} canEdit={canEdit} />
+        <TaskColumn title="In Progress" status="InProgress" tasks={inProgressTasks} onEditTask={openEditModal} onDeleteTask={handleDeleteTask} onMoveTask={handleMoveTask} canEdit={canEdit} />
+        <TaskColumn title="Done" status="Done" tasks={doneTasks} onEditTask={openEditModal} onDeleteTask={handleDeleteTask} onMoveTask={handleMoveTask} canEdit={canEdit} />
       </div>
 
       <ProjectAnalytics projectId={projectId} />
