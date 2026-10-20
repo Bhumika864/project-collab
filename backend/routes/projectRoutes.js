@@ -14,11 +14,17 @@ const {
   acceptInviteLink,
 } = require('../controllers/projectController');
 const { protect } = require('../middleware/authMiddleware');
+const {
+  getProjectActivity,
+  getProjectAnalytics,
+} = require('../controllers/projectInsightsController');
 
 // All of these routes are protected and require a logged-in user
 router.route('/').post(protect, createProject).get(protect, getProjects);
 
 router.post('/invitations/:token/accept', protect, acceptInviteLink);
+router.get('/:id/activity', protect, getProjectActivity);
+router.get('/:id/analytics', protect, getProjectAnalytics);
 router.route('/:id').get(protect, getProjectById);
 
 router.route('/:id/members').post(protect, addProjectMember);

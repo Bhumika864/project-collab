@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as projectService from '../services/projectService';
 import * as taskService from '../services/taskService';
@@ -7,12 +7,15 @@ import TaskColumn from '../components/TaskColumn';
 import TaskModal from '../components/TaskModal';
 import socket from '../services/socketService';
 import EditProjectModal from '../components/EditProjectModal';
+import ActivityFeed from '../components/ActivityFeed';
+import ProjectAnalytics from '../components/ProjectAnalytics';
 const ProjectPage = () => {
   // State for Edit modal
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const { projectId } = useParams();
   const navigate = useNavigate(); // Get the navigate function
+  const location = useLocation();
   const { user } = useAuth();
   const [project, setProject] = useState(null);
   const [tasks, setTasks] = useState([]);
@@ -56,6 +59,11 @@ const ProjectPage = () => {
       socket.disconnect();
     };
   }, [projectId, fetchProjectData, user?.token]);
+
+  useEffect(() => {
+    if (!location.hash || !tasks.length) return;
+    document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView({ behavior: 'smooth' });
+  }, [location.hash, tasks]);
 
   const handleProjectUpdated = (updated) => {
     setProject(updated); // instantly refresh UI
@@ -207,6 +215,9 @@ const ProjectPage = () => {
         <TaskColumn title="In Progress" tasks={inProgressTasks} onEditTask={openEditModal} onDeleteTask={handleDeleteTask} canEdit={canEdit} />
         <TaskColumn title="Done" tasks={doneTasks} onEditTask={openEditModal} onDeleteTask={handleDeleteTask} canEdit={canEdit} />
       </div>
+
+      <ProjectAnalytics projectId={projectId} />
+      <ActivityFeed projectId={projectId} members={[project.owner, ...(project.members || [])].filter(Boolean)} />
 
       <div className="mt-8 p-6 bg-gray-800 rounded-lg">
         <h3 className="text-xl font-semibold mb-4">Members</h3>

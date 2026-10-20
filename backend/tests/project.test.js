@@ -140,4 +140,46 @@ describe('Project API', () => {
       .set('Authorization', `Bearer ${login.body.token}`);
     expect(rejected.statusCode).toBe(404);
   });
+
+  it('should record task activity and return project analytics', async () => {
+    const project = await request(app)
+      .post('/api/projects')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: 'Insights project' });
+    const task = await request(app)
+      .post('/api/tasks')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: 'Tracked task', projectId: project.body._id });
+
+    await request(app)
+      .put(`/api/tasks/${task.body._id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'InProgress' });
+    await request(app)
+      .put(`/api/tasks/${task.body._id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'Done' });
+    await request(app)
+      .post('/api/tasks')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: 'Open task', projectId: project.body._id });
+
+    const feed = await request(app)
+      .get(`/api/projects/${project.body._id}/activity?action=updated`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(feed.statusCode).toBe(200);
+    expect(feed.body).toHaveLength(2);
+    expect(feed.body[0].actor.name).toBe('Project Owner');
+    expect(feed.body[0].changes.status.to).toBe('Done');
+
+    const analytics = await request(app)
+      .get(`/api/projects/${project.body._id}/analytics`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(analytics.statusCode).toBe(200);
+    expect(analytics.body.totalTasks).toBe(2);
+    expect(analytics.body.completedTasks).toBe(1);
+    expect(analytics.body.averageCycleTimeHours).not.toBeNull();
+    expect(analytics.body.completionTrend.reduce((sum, day) => sum + day.completed, 0)).toBe(1);
+    expect(analytics.body.workloadByMember[0].name).toBe('Unassigned');
+  });
 });

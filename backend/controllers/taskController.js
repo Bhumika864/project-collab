@@ -1,6 +1,13 @@
 const Task = require('../models/Task');
 const Project = require('../models/Project');
 const { getProjectRole } = require('../utils/projectPermissions');
+const recordActivity = require('../utils/recordActivity');
+
+const emitActivity = (io, projectId, activity) => {
+  if (io) {
+    io.to(projectId.toString()).emit('activityCreated', activity);
+  }
+};
 
 // @desc    Create a new task for a project
 // @route   POST /api/tasks
@@ -35,8 +42,18 @@ const createTask = async (req, res) => {
       dueDate,
     });
 
+    const changes = { status: { from: null, to: task.status } };
+    const activity = await recordActivity({
+      project: projectId,
+      task,
+      actor: req.user._id,
+      action: 'created',
+      changes,
+    });
+    emitActivity(req.io, projectId, activity);
     res.status(201).json(task);
   } catch (error) {
+    console.error('Failed to create task:', error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
@@ -86,10 +103,26 @@ const updateTask = async (req, res) => {
       fields.filter((field) => Object.hasOwn(req.body, field))
         .map((field) => [field, req.body[field]])
     );
+    const changes = Object.fromEntries(
+      Object.entries(updates)
+        .filter(([field, value]) => String(task[field] ?? '') !== String(value ?? ''))
+        .map(([field, value]) => [field, { from: task[field] ?? null, to: value ?? null }])
+    );
     const updatedTask = await Task.findByIdAndUpdate(req.params.id, updates, {
       new: true,
       runValidators: true,
     });
+
+    if (Object.keys(changes).length) {
+      const activity = await recordActivity({
+        project: task.project,
+        task: updatedTask,
+        actor: req.user._id,
+        action: 'updated',
+        changes,
+      });
+      emitActivity(req.io, task.project, activity);
+    }
 
     // Emit the real-time event BEFORE sending the response.
     if (req.io) {
@@ -122,9 +155,17 @@ const deleteTask = async (req, res) => {
         return res.status(403).json({ message: 'Only project editors can delete tasks' });
     }
 
+    const activity = await recordActivity({
+      project: task.project,
+      task,
+      actor: req.user._id,
+      action: 'deleted',
+    });
     await task.deleteOne();
+    emitActivity(req.io, task.project, activity);
     res.json({ message: 'Task removed' });
   } catch (error) {
+    console.error('Failed to delete task:', error);
     res.status(500).json({ message: 'Server Error' });
   }
 };

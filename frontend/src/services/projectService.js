@@ -49,6 +49,16 @@ export const acceptInviteLink = async (token) => {
   return response.data;
 };
 
+export const getProjectActivity = async (projectId, filters = {}) => {
+  const response = await api.get(`/projects/${projectId}/activity`, { params: filters });
+  return response.data;
+};
+
+export const getProjectAnalytics = async (projectId) => {
+  const response = await api.get(`/projects/${projectId}/analytics`);
+  return response.data;
+};
+
 // Function to delete a project
 export const deleteProject = async (projectId) => {
   const response = await api.delete(`/projects/${projectId}`);

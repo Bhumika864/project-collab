@@ -2,7 +2,7 @@ import React from 'react';
 
 const TaskCard = ({ task, onEdit, onDelete, canEdit }) => {
   return (
-    <div className="bg-gray-700 rounded-md p-3 shadow-sm">
+    <div id={`task-${task._id}`} className="bg-gray-700 rounded-md p-3 shadow-sm">
       <div className="flex justify-between items-start">
         <h4 className="font-medium text-white">{task.title}</h4>
         {canEdit && <>

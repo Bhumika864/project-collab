@@ -21,6 +21,8 @@ To test the application and its collaborative features without registering, you 
 -   **Task Management**: Kanban-style board with ToDo, InProgress, and Done columns.
 -   **Real-Time Collaboration**: Task updates are broadcast to all project members instantly using Socket.io.
 -   **Project Roles and Invites**: Owners can add existing users by email, manage editor/viewer roles, and create revocable seven-day share links.
+-   **Project Activity Feed**: See task creation, edits, and deletions live, with member/action filters and links to active tasks.
+-   **Project Analytics**: Track overdue and completed work, recent completion trends, task workload, and cycle time from recorded status changes.
 -   **Dashboard Overview**: At-a-glance view of all projects and tasks with a chart for task statuses.
 -   **Protected Routes**: API is secured to ensure users can only access their own data.
 
